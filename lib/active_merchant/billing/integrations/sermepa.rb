@@ -91,12 +91,19 @@ module ActiveMerchant #:nodoc:
 
         def self.supported_languages
           [
+            [:xx, '000'],
             [:es, '001'],
             [:en, '002'],
             [:ca, '003'],
             [:fr, '004'],
             [:de, '005'],
-            [:pt, '009']
+            [:nl, '006'],
+            [:it, '007'],
+            [:sv, '008'],
+            [:pt, '009'],
+            [:pl, '011'],
+            [:gl, '012'],
+            [:eu, '013'],
           ]
         end
 
