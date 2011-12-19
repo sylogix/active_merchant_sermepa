@@ -20,7 +20,6 @@ module ActiveMerchant #:nodoc:
         mattr_accessor :operations_production_url
         self.operations_production_url = "https://sis.sermepa.es/sis/operaciones"
 
-
         def self.service_url 
           mode = ActiveMerchant::Billing::Base.integration_mode
           case mode
@@ -43,20 +42,18 @@ module ActiveMerchant #:nodoc:
           else
             raise StandardError, "Integration mode set to an invalid value: #{mode}"
           end
-
         end
 
         def self.notification(post)
           Notification.new(post)
         end
 
-
-        def self.currency_code( name )
+        def self.currency_code(name)
           row = supported_currencies.assoc(name)
           row.nil? ? supported_currencies.first[1] : row[1]
         end
 
-        def self.currency_from_code( code )
+        def self.currency_from_code(code)
           row = supported_currencies.rassoc(code)
           row.nil? ? supported_currencies.first[0] : row[0]
         end
@@ -66,7 +63,7 @@ module ActiveMerchant #:nodoc:
           row.nil? ? supported_languages.first[1] : row[1]
         end
 
-        def self.language_from_code( code )
+        def self.language_from_code(code)
           row = supported_languages.rassoc(code)
           row.nil? ? supported_languages.first[0] : row[0]
         end
@@ -77,7 +74,7 @@ module ActiveMerchant #:nodoc:
         end
         def self.transaction_from_code(code)
           row = supported_transactions.rassoc(code.to_s)
-          row.nil? ? supported_languages.first[0] : row[0]
+          row.nil? ? supported_transactions.first[0] : row[0]
         end
 
         def self.supported_currencies
