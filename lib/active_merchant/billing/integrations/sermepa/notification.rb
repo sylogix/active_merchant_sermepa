@@ -8,13 +8,13 @@ module ActiveMerchant #:nodoc:
 
           def complete?
             status == 'Completed'
-          end 
+          end
 
           def transaction_id
             params['ds_order']
           end
 
-          # When was this payment received by the client. 
+          # When was this payment received by the client.
           def received_at
             if params['ds_date']
               (day, month, year) = params['ds_date'].split('/')
@@ -26,7 +26,11 @@ module ActiveMerchant #:nodoc:
 
           # the money amount we received in cents in X.2 format
           def gross
-            sprintf("%.2f", params['ds_amount'].to_f / 100)
+            sprintf("%.2f", gross_cents / 100.0)
+          end
+
+          def gross_cents
+            params['ds_amount'].to_i
           end
 
           # Was this a test transaction?
@@ -35,7 +39,7 @@ module ActiveMerchant #:nodoc:
           end
 
           def currency
-            Sermepa.currency_from_code( params['ds_currency'] ) 
+            Sermepa.currency_from_code(params['ds_currency'])
           end
 
           # Status of transaction. List of possible values:
@@ -71,11 +75,11 @@ module ActiveMerchant #:nodoc:
           # Validate the details provided by the gateway by ensuring that the signature
           # matches up with the details provided.
           #
-          # Optionally, a set of credentials can be provided that should contain a 
+          # Optionally, a set of credentials can be provided that should contain a
           # :secret_key instead of using the global credentials defined in the Sermepa::Helper.
           #
           # Example:
-          # 
+          #
           #   def notify
           #     notify = Sermepa::Notification.new(request.query_parameters)
           #
@@ -88,10 +92,10 @@ module ActiveMerchant #:nodoc:
           #
           def acknowledge(credentials = nil)
             return false if params['ds_signature'].blank?
-            str = 
+            str =
               params['ds_amount'].to_s +
               params['ds_order'].to_s +
-              params['ds_merchantcode'].to_s + 
+              params['ds_merchantcode'].to_s +
               params['ds_currency'].to_s +
               params['ds_response'].to_s
             if xml?
@@ -121,7 +125,7 @@ module ActiveMerchant #:nodoc:
               # XML source
               self.params = xml_response_to_hash(@raw)
             else
-              for line in post.to_s.split('&')    
+              for line in post.to_s.split('&')
                 key, value = *line.scan( %r{^([A-Za-z0-9_.]+)\=(.*)$} ).flatten
                 params[key.downcase] = CGI.unescape(value)
               end
@@ -138,7 +142,7 @@ module ActiveMerchant #:nodoc:
             result['code'] = doc.css('RETORNOXML CODIGO').inner_text
             result
           end
- 
+
         end
       end
     end
