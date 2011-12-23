@@ -107,15 +107,15 @@ module ActiveMerchant #:nodoc:
             add_field mappings[:order], order_id
           end
 
-          def currency=( value )
+          def currency=(value)
             add_field mappings[:currency], Sermepa.currency_code(value)
           end
 
-          def language=(lang)
+          def language(lang)
             add_field mappings[:language], Sermepa.language_code(lang)
           end
 
-          def transaction_type=(type)
+          def transaction_type(type)
             add_field mappings[:transaction_type], Sermepa.transaction_code(type)
           end
 
