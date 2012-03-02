@@ -47,7 +47,8 @@ module ActiveMerchant #:nodoc:
           # <tt>Failed</tt>
           # <tt>Pending</tt>
           def status
-            case error_code.to_i
+            return 'Failed' if error_code
+            case response.to_i
             when 0..99
               'Completed'
             when 900
@@ -58,12 +59,16 @@ module ActiveMerchant #:nodoc:
           end
 
           def error_code
+            params['ds_errorcode']
+          end
+
+          def response
             params['ds_response']
           end
 
           def error_message
-            msg = Sermepa.response_code_message(error_code)
-            error_code.to_s + ' - ' + (msg.nil? ? 'Operación Aceptada' : msg)
+            msg = Sermepa.response_code_message(response)
+            response.to_s + ' - ' + (msg.nil? ? 'Operación Aceptada' : msg)
           end
 
           def secure_payment?
@@ -120,26 +125,35 @@ module ActiveMerchant #:nodoc:
           #
           def parse(post)
             if post.is_a?(Hash)
+              @raw = post.inspect.to_s
               post.each { |key, value|  params[key.downcase] = value }
             elsif post.to_s =~ /<retornoxml>/i
               # XML source
-              self.params = xml_response_to_hash(@raw)
+              @raw = post.to_s
+              self.params = xml_response_to_hash(raw)
             else
-              for line in post.to_s.split('&')
+              @raw = post.to_s
+              for line in raw.split('&')
                 key, value = *line.scan( %r{^([A-Za-z0-9_.]+)\=(.*)$} ).flatten
                 params[key.downcase] = CGI.unescape(value)
               end
             end
-            @raw = post.inspect.to_s
           end
 
           def xml_response_to_hash(xml)
             result = { }
             doc = Nokogiri::XML(xml)
-            doc.css('RETORNOXML OPERACION').children().each do |child|
-              result[child.name.downcase] = child.inner_text
-            end
             result['code'] = doc.css('RETORNOXML CODIGO').inner_text
+            if result['code'] == '0'
+              doc.css('RETORNOXML OPERACION').children.each do |child|
+                result[child.name.downcase] = child.inner_text
+              end
+            else
+              result['ds_errorcode'] = result['code']
+              doc.css('RETORNOXML RECIBIDO DATOSENTRADA').children.each do |child|
+                result[child.name.downcase] = child.inner_text unless child.name == 'text'
+              end
+            end
             result
           end
 

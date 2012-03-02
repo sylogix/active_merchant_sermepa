@@ -1,7 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     module Integrations #:nodoc:
-      module BbvaTpv
+      module Sermepa
         class Return < ActiveMerchant::Billing::Integrations::Return
         end
       end
