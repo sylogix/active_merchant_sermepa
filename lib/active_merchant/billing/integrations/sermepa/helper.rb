@@ -150,7 +150,7 @@ module ActiveMerchant #:nodoc:
               xml.DS_MERCHANT_AMOUNT @fields['Ds_Merchant_Amount']
               xml.DS_MERCHANT_MERCHANTURL @fields['Ds_Merchant_MerchantURL']
               xml.DS_MERCHANT_TRANSACTIONTYPE @fields['Ds_Merchant_TransactionType']
-              xml.DS_MERCHANT_MERCHANTDATA @fields['Ds_Merchant_Product_Description']
+              xml.DS_MERCHANT_MERCHANTDATA @fields['Ds_Merchant_ProductDescription']
               xml.DS_MERCHANT_TERMINAL credentials[:terminal_id]
               xml.DS_MERCHANT_MERCHANTCODE credentials[:commercial_id]
               xml.DS_MERCHANT_ORDER @fields['Ds_Merchant_Order']
