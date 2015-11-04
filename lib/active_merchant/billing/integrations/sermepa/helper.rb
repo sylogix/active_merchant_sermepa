@@ -37,10 +37,34 @@ module ActiveMerchant #:nodoc:
         class Helper < ActiveMerchant::Billing::Integrations::Helper
           include PostsData
 
+          SHA256_SIGNATURE_VERSION = 'HMAC_SHA256_V1'
+          attr_reader :fields_sha256
+
           class << self
             # Credentials should be set as a hash containing the fields:
             #  :terminal_id, :commercial_id, :secret_key, :key_type (optional)
             attr_accessor :credentials
+
+            def encrypt(key, data)
+              block_length = 8
+              cipher = OpenSSL::Cipher::Cipher.new('DES3')
+              cipher.encrypt
+
+              cipher.key = Base64.strict_decode64(key)
+              # The OpenSSL default of an all-zeroes ("\\0") IV is used.
+              cipher.padding = 0
+
+              # Padding must be done with zeros
+              data += "\0" until data.bytesize % block_length == 0 #Pad with zeros
+
+              output = cipher.update(data)
+              output << cipher.final
+              output
+            end
+
+            def mac256(key, data)
+              OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), key, data)
+            end
           end
 
           mapping :account,     'Ds_Merchant_MerchantName'
@@ -67,18 +91,27 @@ module ActiveMerchant #:nodoc:
           mapping :expiry_date, 'Ds_Merchant_ChargeExpiryDate'
 
           #### Special Request Specific Fields ####
-          mapping :signature,   'Ds_Merchant_MerchantSignature'
+          # SHA256 signature version
+          mapping :signature_version, 'Ds_SignatureVersion'
+          mapping :parameters,        'Ds_MerchantParameters'
+          mapping :signature,         'Ds_Signature'
           ########
 
           # ammount should always be provided in cents!
           def initialize(order, account, options = {})
             self.credentials = options.delete(:credentials) if options[:credentials]
             super(order, account, options)
+            @fields_sha256 = {}
 
             add_field 'Ds_Merchant_MerchantCode', credentials[:commercial_id]
             add_field 'Ds_Merchant_Terminal', credentials[:terminal_id]
             #add_field mappings[:transaction_type], '0' # Default Transaction Type
             self.transaction_type = :authorization
+          end
+
+          def add_field_sha256(name, value)
+            return if name.blank? || value.blank?
+            fields_sha256[name.to_s] = value.to_s
           end
 
           # Allow credentials to be overwritten if needed
@@ -120,8 +153,11 @@ module ActiveMerchant #:nodoc:
           end
 
           def form_fields
-            add_field mappings[:signature], sign_request
-            @fields
+            parameters = encode_merchant_parameters
+            add_field_sha256 mappings[:signature_version], SHA256_SIGNATURE_VERSION
+            add_field_sha256 mappings[:parameters], parameters
+            add_field_sha256 mappings[:signature], sign_request(parameters)
+            @fields_sha256
           end
 
 
@@ -143,9 +179,18 @@ module ActiveMerchant #:nodoc:
           protected
 
           def build_xml_request
-            xml = Builder::XmlMarkup.new :indent => 2
+            xml = Builder::XmlMarkup.new
+            xml.instruct!
+            xml.REQUEST do
+              build_merchant_data(xml)
+              xml.DS_SIGNATUREVERSION SHA256_SIGNATURE_VERSION
+              xml.DS_SIGNATURE sign_request(merchant_data_xml)
+            end
+            xml.target!
+          end
+
+          def build_merchant_data(xml)
             xml.DATOSENTRADA do
-              xml.DS_Version 0.1
               xml.DS_MERCHANT_CURRENCY @fields['Ds_Merchant_Currency']
               xml.DS_MERCHANT_AMOUNT @fields['Ds_Merchant_Amount']
               xml.DS_MERCHANT_MERCHANTURL @fields['Ds_Merchant_MerchantURL']
@@ -154,36 +199,25 @@ module ActiveMerchant #:nodoc:
               xml.DS_MERCHANT_TERMINAL credentials[:terminal_id]
               xml.DS_MERCHANT_MERCHANTCODE credentials[:commercial_id]
               xml.DS_MERCHANT_ORDER @fields['Ds_Merchant_Order']
-              xml.DS_MERCHANT_MERCHANTSIGNATURE sign_request
             end
+          end
+
+          def merchant_data_xml
+            xml = Builder::XmlMarkup.new
+            build_merchant_data(xml)
             xml.target!
           end
 
-
-          # Generate a signature authenticating the current request.
-          # Values included in the signature are determined by the the type of
-          # transaction.
-          def sign_request
-            str = @fields['Ds_Merchant_Amount'].to_s +
-                  @fields['Ds_Merchant_Order'].to_s +
-                  @fields['Ds_Merchant_MerchantCode'].to_s +
-                  @fields['Ds_Merchant_Currency'].to_s
-
-            case Sermepa.transaction_from_code(@fields['Ds_Merchant_TransactionType'])
-            when :recurring_transaction
-              str += @fields['Ds_Merchant_SumTotal']
-            end
-
-            if credentials[:key_type].blank? || credentials[:key_type] == 'sha1_extended'
-              str += @fields['Ds_Merchant_TransactionType'].to_s +
-                     @fields['Ds_Merchant_MerchantURL'].to_s # may be blank!
-            end
-
-            str += credentials[:secret_key]
-
-            Digest::SHA1.hexdigest(str)
+          # Transform all current fields to a json object and apply base64 encoding without new lines.
+          def encode_merchant_parameters
+            Base64.urlsafe_encode64(fields.to_json)
           end
 
+          # Generate a signature authenticating the current request.
+          def sign_request(data)
+            key = self.class.encrypt(credentials[:secret_key], fields['Ds_Merchant_Order'])
+            Base64.strict_encode64(self.class.mac256(key, data))
+          end
         end
       end
     end

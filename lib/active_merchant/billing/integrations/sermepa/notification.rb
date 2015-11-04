@@ -96,23 +96,48 @@ module ActiveMerchant #:nodoc:
           #
           #
           def acknowledge(credentials = nil)
-            return false if params['ds_signature'].blank?
-            str =
-              params['ds_amount'].to_s +
-              params['ds_order'].to_s +
-              params['ds_merchantcode'].to_s +
-              params['ds_currency'].to_s +
-              params['ds_response'].to_s
-            if xml?
-              str += params['ds_transactiontype'].to_s + params['ds_securepayment'].to_s
+            if raw =~ /<retornoxml>/i
+              acknowledge_xml(credentials)
+            else
+              acknowledge_params(credentials)
             end
-
-            str += (credentials || Sermepa::Helper.credentials)[:secret_key]
-            sig = Digest::SHA1.hexdigest(str)
-            sig.upcase == params['ds_signature'].to_s.upcase
           end
 
           private
+
+          def acknowledge_params(credentials)
+            params.merge!(parse_merchant_parameters)
+            sig = Base64.urlsafe_encode64(Sermepa::Helper.mac256(get_key(credentials), params['ds_merchantparameters']))
+            sig.upcase == params['ds_signature'].to_s.upcase
+          end
+
+          def acknowledge_xml(credentials)
+            sig = Base64.strict_encode64(Sermepa::Helper.mac256(get_key(credentials), xml_signed_fields))
+            sig.upcase == params['ds_signature'].to_s.upcase
+          end
+
+          def get_key(credentials)
+            Sermepa::Helper.encrypt((credentials || Sermepa::Helper.credentials)[:secret_key], params['ds_order'])
+          end
+
+          # Transform all current fields to a json object and apply base64 encoding without new lines.
+          def parse_merchant_parameters
+            parsed = {}
+            JSON.parse(decoded_merchant_parameters).each do |key, value|
+              # downcase hash keys
+              parsed[key.downcase] = value
+            end
+            parsed
+          end
+
+          def xml_signed_fields
+            params['ds_amount'] + params['ds_order'] + params['ds_merchantcode'] + params['ds_currency'] +
+                params['ds_response'] + params['ds_transactiontype'] + params['ds_securepayment']
+          end
+
+          def decoded_merchant_parameters
+            Base64.urlsafe_decode64(params['ds_merchantparameters'])
+          end
 
           def xml?
             !params['code'].blank?
