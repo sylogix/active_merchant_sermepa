@@ -106,8 +106,12 @@ module ActiveMerchant #:nodoc:
           private
 
           def acknowledge_params(credentials)
+            return if params['ds_merchantparameters'].blank?
+            
             params.merge!(parse_merchant_parameters)
-            sig = Base64.urlsafe_encode64(Sermepa::Helper.mac256(get_key(credentials), params['ds_merchantparameters']))
+            # sig = Base64.urlsafe_encode64(Sermepa::Helper.mac256(get_key(credentials), params['ds_merchantparameters']))
+            # http://apidock.com/ruby/Base64/urlsafe_encode64
+            sig = Base64.strict_encode64(Sermepa::Helper.mac256(get_key(credentials), params['ds_merchantparameters'])).tr("+/", "-_")
             sig.upcase == params['ds_signature'].to_s.upcase
           end
 
@@ -126,7 +130,7 @@ module ActiveMerchant #:nodoc:
             JSON.parse(decoded_merchant_parameters).each do |key, value|
               # downcase hash keys
               parsed[key.downcase] = value
-            end
+            end if decoded_merchant_parameters
             parsed
           end
 
@@ -136,7 +140,10 @@ module ActiveMerchant #:nodoc:
           end
 
           def decoded_merchant_parameters
-            Base64.urlsafe_decode64(params['ds_merchantparameters'])
+            # Base64.urlsafe_decode64(params['ds_merchantparameters'])
+            # http://apidock.com/ruby/Base64/urlsafe_decode64
+            # http://apidock.com/ruby/v1_9_3_392/Base64/strict_decode64
+            params['ds_merchantparameters'].tr("-_", "+/").unpack("m0").first if params['ds_merchantparameters']
           end
 
           def xml?
