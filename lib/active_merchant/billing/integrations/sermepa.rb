@@ -11,11 +11,11 @@ module ActiveMerchant #:nodoc:
         autoload :Notification, 'active_merchant/billing/integrations/sermepa/notification.rb'
        
         mattr_accessor :service_test_url
-        self.service_test_url = "https://sis-t.redsys.es:25443/sis/services/SerClsWSEntrada"
+        self.service_test_url = "https://sis-t.redsys.es:25443/sis/operaciones"
         #self.service_test_url = "https://sis-t.redsys.es:25443/sis/realizarPago"
         mattr_accessor :service_production_url
         #self.service_production_url = "https://sis.redsys.es/sis/realizarPago"
-        self.service_production_url = "https://sis.redsys.es/sis/services/SerClsWSEntrada"
+        self.service_production_url = "https://sis.redsys.es/sis/operaciones"
 
         mattr_accessor :operations_test_url
         self.operations_test_url = "https://sis-t.redsys.es:25443/sis/operaciones"
