@@ -52,9 +52,9 @@ module ActiveMerchant #:nodoc:
               cipher = OpenSSL::Cipher::Cipher.new('DES3')
               cipher.encrypt
 
-              # cipher.key = Base64.strict_decode64(key)
+              cipher.key = Base64.strict_decode64(key)
               # http://apidock.com/ruby/v1_9_3_392/Base64/strict_decode64
-              cipher.key = key.unpack("m0").first
+              #cipher.key = key.unpack("m0").first
               
               # The OpenSSL default of an all-zeroes ("\\0") IV is used.
               cipher.padding = 0
@@ -111,8 +111,8 @@ module ActiveMerchant #:nodoc:
 
             add_field 'Ds_Merchant_MerchantCode', credentials[:commercial_id]
             add_field 'Ds_Merchant_Terminal', credentials[:terminal_id]
-            add_field mappings[:transaction_type], '0' # Default Transaction Type
-            # self.transaction_type = :authorization
+            #add_field mappings[:transaction_type], '0' # Default Transaction Type
+            self.transaction_type = :authorization
           end
 
           def add_field_sha256(name, value)
@@ -216,9 +216,9 @@ module ActiveMerchant #:nodoc:
 
           # Transform all current fields to a json object and apply base64 encoding without new lines.
           def encode_merchant_parameters
-            # Base64.urlsafe_encode64(fields.to_json)
+            Base64.urlsafe_encode64(fields.to_json)
             # http://apidock.com/ruby/Base64/urlsafe_encode64
-            Base64.strict_encode64(fields.to_json).tr("+/", "-_")
+            #Base64.strict_encode64(fields.to_json).tr("+/", "-_")
           end
 
           # Generate a signature authenticating the current request.
