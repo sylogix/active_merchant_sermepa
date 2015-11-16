@@ -105,6 +105,7 @@ module ActiveMerchant #:nodoc:
 
           # ammount should always be provided in cents!
           def initialize(order, account, options = {})
+            debugger
             self.credentials = options.delete(:credentials) if options[:credentials]
             super(order, account, options)
             @fields_sha256 = {}
@@ -129,7 +130,6 @@ module ActiveMerchant #:nodoc:
           end
 
           def amount=(money)
-            debugger
             cents = money.respond_to?(:cents) ? money.cents : money
             if money.is_a?(String) || cents.to_i <= 0
               raise ArgumentError, 'money amount must be either a Money object or a positive integer in cents.'
