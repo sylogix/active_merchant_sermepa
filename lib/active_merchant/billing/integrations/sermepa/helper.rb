@@ -60,15 +60,14 @@ module ActiveMerchant #:nodoc:
               cipher.padding = 0
 
               # Padding must be done with zeros
-              data += "\0" until data.bytesize % block_length == 0 #Pad with zeros
-
+              #data += "\0" until data.bytesize % block_length == 0 #Pad with zeros
+              data += '\u0000' until data.bytesize % block_length == 0 #Pad with zeros
               output = cipher.update(data)
               output << cipher.final
               output
             end
 
             def mac256(key, data)
-              debugger
               return if data.nil?
               OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), key, data)
             end
@@ -161,7 +160,6 @@ module ActiveMerchant #:nodoc:
           end
 
           def form_fields
-            debugger
             parameters = encode_merchant_parameters
             add_field_sha256 mappings[:signature_version], SHA256_SIGNATURE_VERSION
             add_field_sha256 mappings[:parameters], parameters
@@ -188,7 +186,6 @@ module ActiveMerchant #:nodoc:
           protected
 
           def build_xml_request
-            debugger
             xml = Builder::XmlMarkup.new
             xml.instruct!
             xml.REQUEST do
@@ -200,7 +197,6 @@ module ActiveMerchant #:nodoc:
           end
 
           def build_merchant_data(xml)
-            debugger
             xml.DATOSENTRADA do
               xml.DS_MERCHANT_CURRENCY @fields['Ds_Merchant_Currency']
               xml.DS_MERCHANT_AMOUNT @fields['Ds_Merchant_Amount']
@@ -214,7 +210,6 @@ module ActiveMerchant #:nodoc:
           end
 
           def merchant_data_xml
-            debugger
             xml = Builder::XmlMarkup.new
             build_merchant_data(xml)
             xml.target!
@@ -222,7 +217,6 @@ module ActiveMerchant #:nodoc:
 
           # Transform all current fields to a json object and apply base64 encoding without new lines.
           def encode_merchant_parameters
-            debugger
             # Base64.urlsafe_encode64(fields.to_json)
             # http://apidock.com/ruby/Base64/urlsafe_encode64
             Base64.strict_encode64(fields.to_json).tr("+/", "-_")
@@ -230,7 +224,6 @@ module ActiveMerchant #:nodoc:
 
           # Generate a signature authenticating the current request.
           def sign_request(data)
-            debugger
             key = self.class.encrypt(credentials[:secret_key], fields['Ds_Merchant_Order'])
             Base64.strict_encode64(self.class.mac256(key, data))
           end
