@@ -46,7 +46,6 @@ module ActiveMerchant #:nodoc:
             attr_accessor :credentials
 
             def encrypt(key, data)
-              debugger
               return if data.nil?
               block_length = 8
               cipher = OpenSSL::Cipher::Cipher.new('DES3')
@@ -105,7 +104,6 @@ module ActiveMerchant #:nodoc:
 
           # ammount should always be provided in cents!
           def initialize(order, account, options = {})
-            debugger
             self.credentials = options.delete(:credentials) if options[:credentials]
             super(order, account, options)
             @fields_sha256 = {}
