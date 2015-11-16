@@ -60,8 +60,8 @@ module ActiveMerchant #:nodoc:
               cipher.padding = 0
 
               # Padding must be done with zeros
-              #data += "\0" until data.bytesize % block_length == 0 #Pad with zeros
-              data += '\u0000' until data.bytesize % block_length == 0 #Pad with zeros
+              data += "\0" until data.bytesize % block_length == 0 #Pad with zeros
+              #data += '\u0000' until data.bytesize % block_length == 0 #Pad with zeros
               output = cipher.update(data)
               output << cipher.final
               output
