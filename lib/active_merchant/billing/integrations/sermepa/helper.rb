@@ -52,9 +52,9 @@ module ActiveMerchant #:nodoc:
               cipher = OpenSSL::Cipher::Cipher.new('DES3')
               cipher.encrypt
 
-              # cipher.key = Base64.strict_decode64(key)
+              cipher.key = Base64.strict_decode64(key)
               # http://apidock.com/ruby/v1_9_3_392/Base64/strict_decode64
-              cipher.key = key.unpack("m0").first
+              # cipher.key = key.unpack("m0").first
 
               # The OpenSSL default of an all-zeroes ("\\0") IV is used.
               cipher.padding = 0
@@ -161,6 +161,7 @@ module ActiveMerchant #:nodoc:
           end
 
           def form_fields
+            debugger
             parameters = encode_merchant_parameters
             add_field_sha256 mappings[:signature_version], SHA256_SIGNATURE_VERSION
             add_field_sha256 mappings[:parameters], parameters
