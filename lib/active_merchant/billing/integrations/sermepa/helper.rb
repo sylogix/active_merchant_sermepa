@@ -110,8 +110,7 @@ module ActiveMerchant #:nodoc:
 
             add_field 'Ds_Merchant_MerchantCode', credentials[:commercial_id]
             add_field 'Ds_Merchant_Terminal', credentials[:terminal_id]
-            add_field mappings[:transaction_type], '0' # Default Transaction Type
-            self.transaction_type = '0'
+            transaction_type(:authorization) #authorization: '0' #Default Transaction Type
           end
 
           def add_field_sha256(name, value)
@@ -146,15 +145,15 @@ module ActiveMerchant #:nodoc:
           end
 
           def currency=(value)
-            add_field mappings[:currency], Sermepa.currency_code('978')
+            add_field mappings[:currency], Sermepa.currency_code(value)
           end
 
           def language(lang)
-            add_field mappings[:language], Sermepa.language_code('001')
+            add_field mappings[:language], Sermepa.language_code(lang)
           end
 
           def transaction_type(type)
-            add_field mappings[:transaction_type], Sermepa.transaction_code('0')
+            add_field mappings[:transaction_type], Sermepa.transaction_code(type)
           end
 
           def form_fields
